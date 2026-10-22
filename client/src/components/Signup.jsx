@@ -1,34 +1,56 @@
 import { useState } from 'react';
 
-function Signup() {
+export default function Signup() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-
-    async function submitLogin(e) {
+    const [resVis, setResVis] = useState({message: '', err: false});
+    
+    async function submitSignup(e) {
         e.preventDefault();
 
-        const response = await fetch('http://localhost:9000/api/signup', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({email, password})
-        });
+        let response;
 
-        const data = await response.json();
+        try {
+            response = await fetch('http://localhost:9000/api/signup', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({email, password})
+            });
+        } catch (e) {
+            setResVis({message:`Failed to connect to server`, err: true});
+            return;
+        }
 
         if (response.ok) {
-            console.log("Signup success!");
+            onSignupSuccess(response);
         } else {
-            console.error("Signup failed!");
+            onSignupFail(response);
         }
     }
 
+    async function onSignupSuccess(res) {
+        const data = await res.json();
+
+        console.log(`AUTH: Login successful (${res.status})`);
+        setResVis({message: `Sign up complete! Welcome.`})
+        
+    }
+
+    async function onSignupFail(res) {
+        const data = await res.json();
+
+        console.log(`AUTH: Signup failed (${res.status})`);
+        setResVis({message: `${res.status}: ${data.message}`, err: true})
+
+    }
+
     return (
-        <div className="login-form">
+        <div className="signup-form">
             <h2>Sign Up</h2>
 
-            <form onSubmit={submitLogin}>
+            <form onSubmit={submitSignup}>
                 <label htmlFor="email">Email:</label>
                 <input
                     type="email"
@@ -47,10 +69,12 @@ function Signup() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                 />
-                <button type="submit">Login</button>
+                <button type="submit">Sign Up</button>
             </form>
+
+            {resVis.message && (<h3 style={{color: resVis.err ? 'red' : 'green'}}>
+                {resVis.message}
+            </h3>)}
         </div>
     );
 }
-
-export default Signup;

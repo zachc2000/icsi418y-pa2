@@ -1,27 +1,49 @@
 import { useState } from 'react';
 
-function Login() {
+export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [resVis, setResVis] = useState({message: '', err: false});
 
     async function submitLogin(e) {
         e.preventDefault();
 
-        const response = await fetch('http://localhost:9000/api/login', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({email, password})
-        });
+        let response;
 
-        const data = await response.json();
+        try {
+            response = await fetch('http://localhost:9000/api/login', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({email, password})
+            });
+        } catch (e) {
+            setResVis({message:`Failed to connect to server`, err: true});
+            return;
+        }
 
         if (response.ok) {
-            console.log("Login success!");
+            onLoginSuccess(response);
         } else {
-            console.error("Login failed!");
+            onLoginFail(response);
         }
+    }
+
+    async function onLoginSuccess(res) {
+        const data = await res.json();
+
+        console.log(`AUTH: Login successful (${res.status})`);
+        setResVis({message: `Welcome! Login successful.`})
+        
+    }
+
+    async function onLoginFail(res) {
+        const data = await res.json();
+
+        console.log(`AUTH: Login failed (${res.status})`);
+        setResVis({message: `${res.status}: ${data.message}`, err: true})
+
     }
 
     return (
@@ -49,8 +71,10 @@ function Login() {
                 />
                 <button type="submit">Login</button>
             </form>
+
+            {resVis.message && (<h3 style={{color: resVis.err ? 'red' : 'green'}}>
+                {resVis.message}
+            </h3>)}
         </div>
     );
 }
-
-export default Login;
